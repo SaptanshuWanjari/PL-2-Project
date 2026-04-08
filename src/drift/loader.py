@@ -1,9 +1,10 @@
 """CSV file loader and validator."""
 
-import pandas as pd
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from dataclasses import dataclass
+
+import pandas as pd
 
 
 @dataclass
@@ -95,9 +96,7 @@ class CSVLoader:
         self._last_encoding = encoding
         return df, info
 
-    def _read_with_encoding(
-        self, path: Path
-    ) -> tuple[pd.DataFrame, str]:
+    def _read_with_encoding(self, path: Path) -> tuple[pd.DataFrame, str]:
         """Try reading CSV with different encodings.
 
         Args:
@@ -174,7 +173,7 @@ class CSVLoader:
         if empty_cols:
             if self.strict:
                 raise ValueError(
-                    f"CSV has empty column names. Use --no-strict to allow this."
+                    "CSV has empty column names. Use --no-strict to allow this."
                 )
 
     def get_column_types(self, df: pd.DataFrame) -> dict[str, str]:
@@ -250,9 +249,7 @@ class CSVLoader:
         return "unknown"
 
     @staticmethod
-    def get_unique_values(
-        df: pd.DataFrame, column: str, max_values: int = 100
-    ) -> list:
+    def get_unique_values(df: pd.DataFrame, column: str, max_values: int = 100) -> list:
         """Get unique values from a column.
 
         Args:

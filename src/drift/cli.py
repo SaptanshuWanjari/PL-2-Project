@@ -10,8 +10,10 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
+from rich.console import Group
 
 from drift.loader import CSVLoader
 from drift.schema import SchemaAnalyzer
@@ -409,20 +411,24 @@ def types(
         common_columns = list(set(old_df.columns) & set(new_df.columns))
         changes = checker.compare_types(old_df, new_df, common_columns)
 
-        console.print(
-            Panel(
-                f"{display_path(old_info.file_path)} [dim]vs[/dim] {display_path(new_info.file_path)}",
-                title="[bold cyan]Type Comparison[/bold cyan]",
-                border_style="cyan",
-            )
-        )
-
         summary = Table(show_header=False, box=None, padding=(0, 2))
         summary.add_column("key", style="dim")
         summary.add_column("value")
         summary.add_row("Common columns", str(len(common_columns)))
         summary.add_row("Type changes", str(len(changes)))
-        console.print(Panel(summary, title="[bold]Summary[/bold]", border_style="blue"))
+
+        overview = Group(
+            f"{display_path(old_info.file_path)} [dim]vs[/dim] {display_path(new_info.file_path)}",
+            Rule(style="dim"),
+            summary,
+        )
+        console.print(
+            Panel(
+                overview,
+                title="[bold cyan]Type Comparison[/bold cyan]",
+                border_style="cyan",
+            )
+        )
 
         if changes:
             table = Table(title="Type Changes")
@@ -462,14 +468,6 @@ def info(
         df, info = loader.load(file)
         types = loader.get_column_types(df)
 
-        console.print(
-            Panel(
-                display_path(info.file_path),
-                title="[bold cyan]CSV File Info[/bold cyan]",
-                border_style="cyan",
-            )
-        )
-
         meta = Table(show_header=False, box=None, padding=(0, 2))
         meta.add_column("key", style="dim")
         meta.add_column("value")
@@ -477,7 +475,15 @@ def info(
         meta.add_row("Columns", str(info.column_count))
         meta.add_row("Size", f"{info.file_size_bytes / 1024:.1f} KB")
         meta.add_row("Encoding", info.encoding)
-        console.print(Panel(meta, title="[bold]Summary[/bold]", border_style="blue"))
+
+        overview = Group(display_path(info.file_path), Rule(style="dim"), meta)
+        console.print(
+            Panel(
+                overview,
+                title="[bold cyan]CSV File Info[/bold cyan]",
+                border_style="cyan",
+            )
+        )
 
         columns_table = Table(title="Columns")
         columns_table.add_column("Column", style="cyan")

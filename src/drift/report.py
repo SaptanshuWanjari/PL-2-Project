@@ -6,9 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from rich.console import Console
 from rich.columns import Columns
+from rich.console import Console, Group
 from rich.panel import Panel
+from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
@@ -25,26 +26,6 @@ class ReportConfig:
 
 
 class ReportGenerator:
-    """Generates drift analysis reports in multiple formats.
-
-    This class takes drift analysis results and produces formatted reports
-    suitable for terminal output, documentation, or programmatic processing.
-
-    Output sections (in order):
-    1. Header Section - tool name, file paths, timestamp
-    2. Summary Panel - severity, row counts, column counts, change counts
-    3. Schema Changes - added, removed, reordered, possible renames
-    4. Type Changes - column, old type → new type, risk level
-    5. Row-Level Changes (if key provided) - changed rows, sample mismatches
-    6. Explanation Section - human-readable insights
-    7. Export Info - if output file generated
-
-    Example:
-        >>> generator = ReportGenerator()
-        >>> report = generator.generate(results, format="pretty")
-        >>> print(report)
-    """
-
     COLOR_MAP = {
         "Low": "green",
         "Medium": "yellow",
@@ -59,16 +40,10 @@ class ReportGenerator:
     }
 
     def __init__(self, config: Optional[ReportConfig] = None):
-        """Initialize the report generator.
-
-        Args:
-            config: Report configuration options
-        """
         self.config = config or ReportConfig()
         self.console = Console(no_color=self.config.no_color)
 
     def _display_path(self, path_value: Any) -> str:
-        """Render file paths relative to current working directory when possible."""
         if path_value is None:
             return "unknown"
 
@@ -94,17 +69,6 @@ class ReportGenerator:
         new_info: dict,
         format: Optional[str] = None,
     ) -> str:
-        """Generate a report from drift analysis results.
-
-        Args:
-            results: Dictionary containing all drift analysis results
-            old_info: Metadata about old CSV file
-            new_info: Metadata about new CSV file
-            format: Output format (overrides config)
-
-        Returns:
-            Formatted report string
-        """
         fmt = format or self.config.format
 
         if fmt == "pretty":
@@ -124,14 +88,10 @@ class ReportGenerator:
         old_info: dict,
         new_info: dict,
     ) -> str:
-        """Generate Rich-formatted output for terminal."""
         lines = []
 
-        # Header
-        lines.append(self._format_header_pretty(old_info, new_info))
-
-        # Summary
-        lines.append(self._format_summary_pretty(results, old_info, new_info))
+        # Combined header + summary
+        lines.append(self._format_overview_pretty(results, old_info, new_info))
 
         if not self.config.summary_only:
             # Schema Changes
@@ -155,8 +115,62 @@ class ReportGenerator:
 
         return "\n".join(lines)
 
+    def _format_overview_pretty(
+        self,
+        results: dict[str, Any],
+        old_info: dict,
+        new_info: dict,
+    ) -> str:
+        severity = results.get("severity", "Low")
+        severity_color = self.COLOR_MAP.get(severity, "white")
+
+        old_rows = old_info.get("row_count", 0)
+        new_rows = new_info.get("row_count", 0)
+        old_cols = old_info.get("column_count", 0)
+        new_cols = new_info.get("column_count", 0)
+
+        row_diff = new_rows - old_rows
+        col_diff = new_cols - old_cols
+        row_symbol = "+" if row_diff >= 0 else ""
+        col_symbol = "+" if col_diff >= 0 else ""
+
+        schema = results.get("schema", {})
+        type_changes = results.get("type_changes", [])
+        row_results = results.get("row_diff", {})
+
+        old_path = self._display_path(old_info.get("file_path", "unknown"))
+        new_path = self._display_path(new_info.get("file_path", "unknown"))
+
+        header = Text()
+        header.append("DRIFT ANALYZER", style="bold cyan")
+        header.append(" v1.0.0\n")
+        header.append(old_path, style="white")
+        header.append(" vs ", style="dim")
+        header.append(new_path, style="white")
+        header.append(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", style="dim")
+
+        summary = Table(show_header=False, box=None, padding=(0, 2))
+        summary.add_column("key", style="dim")
+        summary.add_column("value")
+        summary.add_row("Severity", f"[{severity_color}]{severity}[/{severity_color}]")
+        summary.add_row(
+            "Rows", f"{old_rows:,} → {new_rows:,} ({row_symbol}{row_diff:,})"
+        )
+        summary.add_row("Columns", f"{old_cols} → {new_cols} ({col_symbol}{col_diff})")
+        summary.add_row(
+            "Schema changes",
+            str(len(schema.get("removed", [])) + len(schema.get("added", []))),
+        )
+        summary.add_row("Type changes", str(len(type_changes)))
+        summary.add_row("Row changes", str(len(row_results.get("changed_rows", []))))
+
+        combined = Group(header, Rule(style="dim"), summary)
+
+        with self.console.capture() as capture:
+            self.console.print(Panel(combined, border_style="cyan", padding=(1, 2)))
+        return capture.get()
+
     def _format_header_pretty(self, old_info: dict, new_info: dict) -> str:
-        """Format the header section."""
         from rich.text import Text
 
         old_path = self._display_path(old_info.get("file_path", "unknown"))
@@ -181,7 +195,6 @@ class ReportGenerator:
         old_info: dict,
         new_info: dict,
     ) -> str:
-        """Format the summary panel."""
         severity = results.get("severity", "Low")
         severity_color = self.COLOR_MAP.get(severity, "white")
 
@@ -222,7 +235,6 @@ class ReportGenerator:
         return capture.get()
 
     def _format_schema_pretty(self, schema: dict) -> str:
-        """Format schema changes section."""
         if not schema:
             return ""
 
@@ -234,27 +246,33 @@ class ReportGenerator:
             if len(tables) == 1:
                 self.console.print(tables[0])
             else:
-                self.console.print(Columns(tables, equal=False, expand=True))
+                self.console.print(
+                    Columns(
+                        tables,
+                        equal=False,
+                        expand=False,
+                        align="left",
+                        padding=(0, 1),
+                    )
+                )
         return capture.get()
 
     def _build_schema_tables(self, schema: dict) -> list[Table]:
-        """Build schema section tables for pretty rendering."""
         tables: list[Table] = []
 
         added = schema.get("added", [])
-        if added:
-            table = Table(title="Added Columns", show_header=False)
-            table.add_column("column", style="green")
-            for col in added:
-                table.add_row(str(col))
-            tables.append(table)
-
         removed = schema.get("removed", [])
-        if removed:
-            table = Table(title="Removed Columns", show_header=False)
-            table.add_column("column", style="red")
+        if added or removed:
+            table = Table(title="Column Changes")
+            table.add_column("Type", style="dim")
+            table.add_column("Column")
+
+            for col in added:
+                table.add_row("[green]+ [/green]", f"[green]{col}[/green]")
+
             for col in removed:
-                table.add_row(str(col))
+                table.add_row("[red]-[/red]", f"[red]{col}[/red]")
+
             tables.append(table)
 
         renames = schema.get("renames", [])
@@ -275,8 +293,8 @@ class ReportGenerator:
         if reordered:
             table = Table(title="Reordered Columns")
             table.add_column("Column")
-            table.add_column("Old Position", justify="right")
-            table.add_column("New Position", justify="right")
+            table.add_column("Old", justify="right")
+            table.add_column("New", justify="right")
             for item in reordered:
                 table.add_row(
                     str(item.get("column", "")),
@@ -288,7 +306,6 @@ class ReportGenerator:
         return tables
 
     def _format_types_pretty(self, type_changes: list[dict]) -> str:
-        """Format type changes section."""
         if not type_changes:
             return ""
 
@@ -313,7 +330,6 @@ class ReportGenerator:
         return capture.get()
 
     def _format_rows_pretty(self, row_diff: dict) -> str:
-        """Format row changes section."""
         parts = []
 
         # Summary stats
@@ -357,7 +373,6 @@ class ReportGenerator:
         return "\n".join(parts)
 
     def _format_explanations_pretty(self, explanations: list[str]) -> str:
-        """Format explanations section."""
         if not explanations:
             return ""
 
@@ -369,7 +384,6 @@ class ReportGenerator:
         return capture.get()
 
     def _format_export_pretty(self, output_file: str) -> str:
-        """Format export information."""
         return f"\n[dim]Report saved to: {output_file}[/dim]"
 
     def _format_json(
@@ -378,7 +392,6 @@ class ReportGenerator:
         old_info: dict,
         new_info: dict,
     ) -> str:
-        """Generate JSON output."""
         output = {
             "version": "1.0.0",
             "timestamp": datetime.now().isoformat(),
@@ -401,7 +414,6 @@ class ReportGenerator:
         old_info: dict,
         new_info: dict,
     ) -> str:
-        """Generate Markdown output."""
         lines = []
 
         # Header
@@ -415,7 +427,7 @@ class ReportGenerator:
         # Summary
         severity = results.get("severity", "Low")
         lines.append("## Summary\n")
-        lines.append(f"| Metric | Value |")
+        lines.append("| Metric | Value |")
         lines.append("|--------|-------|")
         lines.append(f"| **Severity** | {severity} |")
         lines.append(
@@ -466,7 +478,7 @@ class ReportGenerator:
         row_diff = results.get("row_diff", {})
         if row_diff:
             lines.append("\n## Row Changes\n")
-            lines.append(f"| Metric | Count |")
+            lines.append("| Metric | Count |")
             lines.append("|--------|-------|")
             lines.append(f"| Total (old) | {row_diff.get('total_old', 0):,} |")
             lines.append(f"| Total (new) | {row_diff.get('total_new', 0):,} |")
@@ -493,7 +505,6 @@ class ReportGenerator:
         old_info: dict,
         new_info: dict,
     ) -> str:
-        """Generate plain text output (CI-friendly)."""
         lines = []
 
         # Header
@@ -575,12 +586,6 @@ class ReportGenerator:
         return "\n".join(lines)
 
     def save_report(self, report: str, output_file: str) -> None:
-        """Save report to a file.
-
-        Args:
-            report: Formatted report string
-            output_file: Path to output file
-        """
         path = Path(output_file)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(report)
