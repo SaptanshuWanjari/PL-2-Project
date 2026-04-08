@@ -1,26 +1,21 @@
-"""CLI entry point for drift analyzer."""
-
-from pathlib import Path
-from typing import Optional
 import os
 import shutil
 import subprocess
+from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
-from rich.console import Group
 
+from drift.explain import ExplainabilityEngine
 from drift.loader import CSVLoader
+from drift.report import ReportConfig, ReportGenerator
+from drift.rows import RowComparator
 from drift.schema import SchemaAnalyzer
 from drift.types import TypeChecker
-from drift.rows import RowComparator
-from drift.explain import ExplainabilityEngine
-from drift.report import ReportGenerator, ReportConfig
 from drift.utils import suggest_key_column
 
 app = typer.Typer(
@@ -33,12 +28,10 @@ console = Console()
 
 
 def is_fzf_available() -> bool:
-    """Return True if fzf exists in PATH."""
     return shutil.which("fzf") is not None
 
 
 def run_fzf(options: list[str], prompt: str) -> Optional[str]:
-    """Run fzf over options and return selected item."""
     if not options:
         return None
 
@@ -57,7 +50,6 @@ def run_fzf(options: list[str], prompt: str) -> Optional[str]:
 
 
 def list_csv_files() -> list[str]:
-    """List CSV files under current working directory."""
     cwd = Path.cwd().resolve()
     files: list[str] = []
 
@@ -80,7 +72,6 @@ def list_csv_files() -> list[str]:
 
 
 def pick_csv_file(prompt: str) -> Optional[str]:
-    """Pick one CSV file using fzf."""
     csv_files = list_csv_files()
     if not csv_files:
         console.print("[yellow]No CSV files found in current directory.[/yellow]")
@@ -89,7 +80,6 @@ def pick_csv_file(prompt: str) -> Optional[str]:
 
 
 def detect_key_column(old_df, new_df) -> Optional[str]:
-    """Detect a reasonable key column shared by both DataFrames."""
     common_columns = [col for col in old_df.columns if col in new_df.columns]
     if not common_columns:
         return None
@@ -109,7 +99,6 @@ def detect_key_column(old_df, new_df) -> Optional[str]:
 
 
 def display_path(path_value: Path | str) -> str:
-    """Display paths relative to current working directory when possible."""
     path = Path(path_value).expanduser()
     if not path.is_absolute():
         return str(path)
@@ -122,7 +111,6 @@ def display_path(path_value: Path | str) -> str:
 
 
 def launch_interactive_mode() -> None:
-    """Launch interactive command and file picker flow."""
     if not is_fzf_available():
         console.print(
             "[red]fzf is required for interactive mode but was not found.[/red]"
@@ -171,7 +159,6 @@ def launch_interactive_mode() -> None:
 
 
 def emit_report(report: str, format: str) -> None:
-    """Emit report text with format-aware rendering."""
     if format == "json":
         print(report)
         return
@@ -185,7 +172,6 @@ def emit_report(report: str, format: str) -> None:
 
 @app.callback(invoke_without_command=True)
 def interactive_callback(ctx: typer.Context) -> None:
-    """Open interactive mode when no subcommand is provided."""
     if ctx.invoked_subcommand is None:
         launch_interactive_mode()
         raise typer.Exit()
@@ -244,17 +230,6 @@ def analyze(
         help="Fail on malformed CSV data",
     ),
 ) -> None:
-    """Compare two CSV files and analyze schema drift.
-
-    Analyzes differences between OLD_FILE and NEW_FILE, including:
-    - Schema changes (added, removed, renamed columns)
-    - Type changes (data type drift)
-    - Row changes (if key column specified)
-
-    Example:
-        drift old.csv new.csv
-        drift old.csv new.csv --key id --format markdown
-    """
     # Initialize components
     loader = CSVLoader(strict=strict)
     schema_analyzer = SchemaAnalyzer()
@@ -288,22 +263,18 @@ def analyze(
             new_df, new_info = loader.load(new_file)
             progress.update(task, description=f"Loaded {new_file.name}")
 
-        # Analyze schema
         if verbose:
             console.print("[dim]Analyzing schema...[/dim]")
 
         schema_diff = schema_analyzer.analyze(old_df, new_df)
 
-        # Get common columns for type comparison
         common_columns = list(set(old_df.columns) & set(new_df.columns))
 
-        # Analyze types
         if verbose:
             console.print("[dim]Analyzing types...[/dim]")
 
         type_changes = type_checker.compare_types(old_df, new_df, common_columns)
 
-        # Analyze rows if key provided or can be detected
         row_diff = {}
         key_column = key
 
@@ -410,32 +381,23 @@ def types(
         common_columns = list(set(old_df.columns) & set(new_df.columns))
         changes = checker.compare_types(old_df, new_df, common_columns)
 
-        summary = Table(show_header=False, box=None, padding=(0, 2))
-        summary.add_column("key", style="dim")
-        summary.add_column("value")
-        summary.add_row("Common columns", str(len(common_columns)))
-        summary.add_row("Type changes", str(len(changes)))
+        table = Table(title="Type Comparison")
+        table.add_column("Column / Metric", style="cyan")
+        table.add_column("Old Type / Value", style="dim")
+        table.add_column("New Type / Value")
+        table.add_column("Risk", justify="center")
 
-        overview = Group(
-            f"{display_path(old_info.file_path)} [dim]vs[/dim] {display_path(new_info.file_path)}",
-            Rule(style="dim"),
-            summary,
+        table.add_row(
+            "Files",
+            display_path(old_info.file_path),
+            display_path(new_info.file_path),
+            "-",
         )
-        console.print(
-            Panel(
-                overview,
-                title="[bold cyan]Type Comparison[/bold cyan]",
-                border_style="cyan",
-            )
-        )
+        table.add_row("Common columns", str(len(common_columns)), "", "-")
+        table.add_row("Type changes", str(len(changes)), "", "-")
+        table.add_section()
 
         if changes:
-            table = Table(title="Type Changes")
-            table.add_column("Column", style="cyan")
-            table.add_column("Old Type", style="dim")
-            table.add_column("New Type")
-            table.add_column("Risk", justify="center")
-
             for change in changes:
                 risk = change.get("risk", "medium")
                 risk_color = {"low": "green", "medium": "yellow", "high": "red"}.get(
@@ -447,9 +409,10 @@ def types(
                     change.get("new_type", ""),
                     f"[{risk_color}]{risk}[/{risk_color}]",
                 )
-            console.print(table)
         else:
-            console.print("[green]No type changes detected[/green]")
+            table.add_row("No type changes detected", "", "", "-")
+
+        console.print(table)
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -467,29 +430,21 @@ def info(
         df, info = loader.load(file)
         types = loader.get_column_types(df)
 
-        meta = Table(show_header=False, box=None, padding=(0, 2))
-        meta.add_column("key", style="dim")
-        meta.add_column("value")
-        meta.add_row("Rows", f"{info.row_count:,}")
-        meta.add_row("Columns", str(info.column_count))
-        meta.add_row("Size", f"{info.file_size_bytes / 1024:.1f} KB")
-        meta.add_row("Encoding", info.encoding)
+        table = Table(title="CSV File Info")
+        table.add_column("Item", style="cyan")
+        table.add_column("Value", style="yellow")
 
-        overview = Group(display_path(info.file_path), Rule(style="dim"), meta)
-        console.print(
-            Panel(
-                overview,
-                title="[bold cyan]CSV File Info[/bold cyan]",
-                border_style="cyan",
-            )
-        )
+        table.add_row("File", display_path(info.file_path))
+        table.add_row("Rows", f"{info.row_count:,}")
+        table.add_row("Columns", str(info.column_count))
+        table.add_row("Size", f"{info.file_size_bytes / 1024:.1f} KB")
+        table.add_row("Encoding", info.encoding)
+        table.add_section()
 
-        columns_table = Table(title="Columns")
-        columns_table.add_column("Column", style="cyan")
-        columns_table.add_column("Type", style="yellow")
         for col, dtype in types.items():
-            columns_table.add_row(str(col), str(dtype))
-        console.print(columns_table)
+            table.add_row(f"Column: {col}", str(dtype))
+
+        console.print(table)
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")

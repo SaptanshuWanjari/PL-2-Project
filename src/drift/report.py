@@ -94,15 +94,16 @@ class ReportGenerator:
         lines.append(self._format_overview_pretty(results, old_info, new_info))
 
         if not self.config.summary_only:
-            # Schema Changes
-            lines.append(self._format_schema_pretty(results.get("schema", {})))
+            # Unified drift tables (schema + row-level)
+            lines.append(
+                self._format_drift_pretty(
+                    results.get("schema", {}),
+                    results.get("row_diff", {}),
+                )
+            )
 
             # Type Changes
             lines.append(self._format_types_pretty(results.get("type_changes", [])))
-
-            # Row Changes
-            if results.get("row_diff"):
-                lines.append(self._format_rows_pretty(results.get("row_diff", {})))
 
             # Explanations
             lines.append(
@@ -169,6 +170,130 @@ class ReportGenerator:
         with self.console.capture() as capture:
             self.console.print(Panel(combined, border_style="cyan", padding=(1, 2)))
         return capture.get()
+
+    def _format_drift_pretty(self, schema: dict, row_diff: dict) -> str:
+        """Render organized drift details using unified schema and row tables."""
+        schema_table = self._build_schema_drift_table(schema)
+        row_table = self._build_row_drift_table(row_diff) if row_diff else None
+
+        if schema_table is None and row_table is None:
+            return ""
+
+        with self.console.capture() as capture:
+            if schema_table is not None and row_table is not None:
+                grid = Table.grid(expand=True)
+                grid.add_column(ratio=3)
+                grid.add_column(ratio=2)
+                grid.add_row(schema_table, row_table)
+                content = grid
+            elif schema_table is not None:
+                content = schema_table
+            else:
+                assert row_table is not None
+                content = row_table
+
+            self.console.print(
+                Panel(
+                    content,
+                    title="[bold]Drift Details[/bold]",
+                    border_style="blue",
+                )
+            )
+        return capture.get()
+
+    def _build_schema_drift_table(self, schema: dict) -> Optional[Table]:
+        """Build one unified schema drift table."""
+        added = schema.get("added", [])
+        removed = schema.get("removed", [])
+        renames = schema.get("renames", [])
+        reordered = schema.get("reordered", [])
+
+        if not (added or removed or renames or reordered):
+            return None
+
+        table = Table(title="Schema Drift")
+        table.add_column("Cat", style="cyan")
+        table.add_column("Field", style="white")
+        table.add_column("Change")
+        table.add_column("Note", style="dim")
+
+        for col in added:
+            table.add_row(
+                "[green]Add[/green]", f"[green]{col}[/green]", "- -> present", ""
+            )
+
+        for col in removed:
+            table.add_row("[red]Drop[/red]", f"[red]{col}[/red]", "present -> -", "")
+
+        for rename in renames:
+            table.add_row(
+                "[yellow]Rename[/yellow]",
+                rename.get("old_name", ""),
+                f"-> {rename.get('new_name', '')}",
+                f"{rename.get('similarity', 0):.0%}",
+            )
+
+        for item in reordered:
+            table.add_row(
+                "[blue]Move[/blue]",
+                str(item.get("column", "")),
+                f"{item.get('old_index', 0) + 1} -> {item.get('new_index', 0) + 1}",
+                "",
+            )
+
+        return table
+
+    def _build_row_drift_table(self, row_diff: dict) -> Optional[Table]:
+        """Build one unified row drift table (summary + samples)."""
+        if not row_diff:
+            return None
+
+        table = Table(title="Row Drift")
+        table.add_column("Section", style="cyan")
+        table.add_column("Item", style="white")
+        table.add_column("Change")
+        table.add_column("Note", style="dim")
+
+        table.add_row("Summary", "total_old", str(row_diff.get("total_old", 0)), "")
+        table.add_row("Summary", "total_new", str(row_diff.get("total_new", 0)), "")
+        table.add_row(
+            "Summary",
+            "missing_rows",
+            str(len(row_diff.get("missing_rows", []))),
+            "",
+        )
+        table.add_row(
+            "Summary",
+            "new_rows",
+            str(len(row_diff.get("new_rows", []))),
+            "",
+        )
+        table.add_row(
+            "Summary",
+            "changed_rows",
+            str(len(row_diff.get("changed_rows", []))),
+            "",
+        )
+        table.add_row(
+            "Summary",
+            "unchanged_rows",
+            str(row_diff.get("unchanged_rows", 0)),
+            "",
+        )
+
+        samples = row_diff.get("samples", [])
+        if samples:
+            table.add_section()
+            for sample in samples[:5]:
+                for change in sample.get("changes", [])[:3]:
+                    table.add_row(
+                        "Sample",
+                        str(sample.get("key", "")),
+                        f"{change.get('column', '')}: {change.get('old_value', '')} -> {change.get('new_value', '')}",
+                        "",
+                    )
+
+        return table
 
     def _format_header_pretty(self, old_info: dict, new_info: dict) -> str:
         from rich.text import Text
@@ -371,6 +496,42 @@ class ReportGenerator:
             parts.append(capture.get())
 
         return "\n".join(parts)
+
+    def _build_row_tables(self, row_diff: dict) -> list[Table]:
+        """Build row-level tables for unified drift section."""
+        tables: list[Table] = []
+
+        summary = Table(title="Row Comparison", show_header=False)
+        summary.add_column("key", style="dim")
+        summary.add_column("value")
+        summary.add_row("Total (old)", str(row_diff.get("total_old", 0)))
+        summary.add_row("Total (new)", str(row_diff.get("total_new", 0)))
+        summary.add_row("Missing rows", str(len(row_diff.get("missing_rows", []))))
+        summary.add_row("New rows", str(len(row_diff.get("new_rows", []))))
+        summary.add_row("Changed rows", str(len(row_diff.get("changed_rows", []))))
+        summary.add_row("Unchanged rows", str(row_diff.get("unchanged_rows", 0)))
+        tables.append(summary)
+
+        samples = row_diff.get("samples", [])
+        if samples:
+            sample_table = Table(title="Sample Changes")
+            sample_table.add_column("Key")
+            sample_table.add_column("Column")
+            sample_table.add_column("Old Value", style="red")
+            sample_table.add_column("New Value", style="green")
+
+            for sample in samples[:5]:
+                for change in sample.get("changes", [])[:3]:
+                    sample_table.add_row(
+                        str(sample.get("key", "")),
+                        str(change.get("column", "")),
+                        str(change.get("old_value", "")),
+                        str(change.get("new_value", "")),
+                    )
+
+            tables.append(sample_table)
+
+        return tables
 
     def _format_explanations_pretty(self, explanations: list[str]) -> str:
         if not explanations:
