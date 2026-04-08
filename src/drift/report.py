@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from rich.console import Console
+from rich.columns import Columns
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -225,31 +226,37 @@ class ReportGenerator:
         if not schema:
             return ""
 
-        parts = []
+        tables = self._build_schema_tables(schema)
+        if not tables:
+            return ""
 
-        # Added columns
+        with self.console.capture() as capture:
+            if len(tables) == 1:
+                self.console.print(tables[0])
+            else:
+                self.console.print(Columns(tables, equal=False, expand=True))
+        return capture.get()
+
+    def _build_schema_tables(self, schema: dict) -> list[Table]:
+        """Build schema section tables for pretty rendering."""
+        tables: list[Table] = []
+
         added = schema.get("added", [])
         if added:
             table = Table(title="Added Columns", show_header=False)
             table.add_column("column", style="green")
             for col in added:
                 table.add_row(str(col))
-            with self.console.capture() as capture:
-                self.console.print(table)
-            parts.append(capture.get())
+            tables.append(table)
 
-        # Removed columns
         removed = schema.get("removed", [])
         if removed:
             table = Table(title="Removed Columns", show_header=False)
             table.add_column("column", style="red")
             for col in removed:
                 table.add_row(str(col))
-            with self.console.capture() as capture:
-                self.console.print(table)
-            parts.append(capture.get())
+            tables.append(table)
 
-        # Renames
         renames = schema.get("renames", [])
         if renames:
             table = Table(title="Possible Renames")
@@ -262,11 +269,8 @@ class ReportGenerator:
                     rename.get("new_name", ""),
                     f"{rename.get('similarity', 0):.0%}",
                 )
-            with self.console.capture() as capture:
-                self.console.print(table)
-            parts.append(capture.get())
+            tables.append(table)
 
-        # Reordered
         reordered = schema.get("reordered", [])
         if reordered:
             table = Table(title="Reordered Columns")
@@ -279,11 +283,9 @@ class ReportGenerator:
                     str(item.get("old_index", 0) + 1),
                     str(item.get("new_index", 0) + 1),
                 )
-            with self.console.capture() as capture:
-                self.console.print(table)
-            parts.append(capture.get())
+            tables.append(table)
 
-        return "\n".join(parts) if parts else ""
+        return tables
 
     def _format_types_pretty(self, type_changes: list[dict]) -> str:
         """Format type changes section."""

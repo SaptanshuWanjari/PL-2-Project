@@ -8,7 +8,9 @@ import subprocess
 
 import typer
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 from rich.text import Text
 
 from drift.loader import CSVLoader
@@ -104,6 +106,19 @@ def detect_key_column(old_df, new_df) -> Optional[str]:
     return None
 
 
+def display_path(path_value: Path | str) -> str:
+    """Display paths relative to current working directory when possible."""
+    path = Path(path_value).expanduser()
+    if not path.is_absolute():
+        return str(path)
+
+    resolved = path.resolve()
+    cwd = Path.cwd().resolve()
+    if resolved.is_relative_to(cwd):
+        return str(resolved.relative_to(cwd))
+    return str(resolved)
+
+
 def launch_interactive_mode() -> None:
     """Launch interactive command and file picker flow."""
     if not is_fzf_available():
@@ -112,7 +127,7 @@ def launch_interactive_mode() -> None:
         )
         raise typer.Exit(1)
 
-    command = run_fzf(["analyze", "schema", "types", "info", "exit"], "Command")
+    command = run_fzf(["analyze", "types", "info", "exit"], "Command")
     if command is None or command == "exit":
         return
 
@@ -135,16 +150,6 @@ def launch_interactive_mode() -> None:
             no_color=False,
             strict=False,
         )
-        return
-
-    if command == "schema":
-        old_file = pick_csv_file("Old CSV")
-        if old_file is None:
-            return
-        new_file = pick_csv_file("New CSV")
-        if new_file is None:
-            return
-        schema(old_file=Path(old_file), new_file=Path(new_file))
         return
 
     if command == "types":
@@ -389,59 +394,6 @@ def analyze(
 
 
 @app.command()
-def schema(
-    old_file: Path = typer.Argument(..., exists=True),
-    new_file: Path = typer.Argument(..., exists=True),
-) -> None:
-    """Compare only schema between two CSV files (no data comparison)."""
-    loader = CSVLoader()
-    analyzer = SchemaAnalyzer()
-
-    try:
-        old_df, _ = loader.load(old_file)
-        new_df, _ = loader.load(new_file)
-
-        diff = analyzer.analyze(old_df, new_df)
-
-        console.print("\n[bold]Schema Comparison[/bold]\n")
-        console.print(f"Old columns: {len(old_df.columns)}")
-        console.print(f"New columns: {len(new_df.columns)}\n")
-
-        if diff.get("added"):
-            console.print("[green]Added columns:[/green]")
-            for col in diff["added"]:
-                console.print(f"  + {col}")
-            console.print()
-
-        if diff.get("removed"):
-            console.print("[red]Removed columns:[/red]")
-            for col in diff["removed"]:
-                console.print(f"  - {col}")
-            console.print()
-
-        if diff.get("renames"):
-            console.print("[yellow]Possible renames:[/yellow]")
-            for rename in diff["renames"]:
-                console.print(
-                    f"  {rename['old_name']} -> {rename['new_name']} "
-                    f"({rename['similarity']:.0%})"
-                )
-            console.print()
-
-        if diff.get("reordered"):
-            console.print("[dim]Reordered columns:[/dim]")
-            for reorder in diff["reordered"]:
-                console.print(
-                    f"  {reorder['column']}: "
-                    f"position {reorder['old_index'] + 1} -> {reorder['new_index'] + 1}"
-                )
-
-    except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
-        raise typer.Exit(1)
-
-
-@app.command()
 def types(
     old_file: Path = typer.Argument(..., exists=True),
     new_file: Path = typer.Argument(..., exists=True),
@@ -451,24 +403,46 @@ def types(
     checker = TypeChecker()
 
     try:
-        old_df, _ = loader.load(old_file)
-        new_df, _ = loader.load(new_file)
+        old_df, old_info = loader.load(old_file)
+        new_df, new_info = loader.load(new_file)
 
         common_columns = list(set(old_df.columns) & set(new_df.columns))
         changes = checker.compare_types(old_df, new_df, common_columns)
 
+        console.print(
+            Panel(
+                f"{display_path(old_info.file_path)} [dim]vs[/dim] {display_path(new_info.file_path)}",
+                title="[bold cyan]Type Comparison[/bold cyan]",
+                border_style="cyan",
+            )
+        )
+
+        summary = Table(show_header=False, box=None, padding=(0, 2))
+        summary.add_column("key", style="dim")
+        summary.add_column("value")
+        summary.add_row("Common columns", str(len(common_columns)))
+        summary.add_row("Type changes", str(len(changes)))
+        console.print(Panel(summary, title="[bold]Summary[/bold]", border_style="blue"))
+
         if changes:
-            console.print("\n[bold]Type Changes[/bold]\n")
+            table = Table(title="Type Changes")
+            table.add_column("Column", style="cyan")
+            table.add_column("Old Type", style="dim")
+            table.add_column("New Type")
+            table.add_column("Risk", justify="center")
+
             for change in changes:
                 risk = change.get("risk", "medium")
                 risk_color = {"low": "green", "medium": "yellow", "high": "red"}.get(
                     risk, "white"
                 )
-                console.print(
-                    f"  {change['column']}: "
-                    f"{change['old_type']} -> {change['new_type']} "
-                    f"[{risk_color}]{risk}[/{risk_color}]"
+                table.add_row(
+                    change.get("column", ""),
+                    change.get("old_type", ""),
+                    change.get("new_type", ""),
+                    f"[{risk_color}]{risk}[/{risk_color}]",
                 )
+            console.print(table)
         else:
             console.print("[green]No type changes detected[/green]")
 
@@ -488,15 +462,29 @@ def info(
         df, info = loader.load(file)
         types = loader.get_column_types(df)
 
-        console.print(f"\n[bold]File: {info.file_path.name}[/bold]\n")
-        console.print(f"Rows: {info.row_count:,}")
-        console.print(f"Columns: {info.column_count}")
-        console.print(f"Size: {info.file_size_bytes / 1024:.1f} KB")
-        console.print(f"Encoding: {info.encoding}\n")
+        console.print(
+            Panel(
+                display_path(info.file_path),
+                title="[bold cyan]CSV File Info[/bold cyan]",
+                border_style="cyan",
+            )
+        )
 
-        console.print("[bold]Columns:[/bold]")
+        meta = Table(show_header=False, box=None, padding=(0, 2))
+        meta.add_column("key", style="dim")
+        meta.add_column("value")
+        meta.add_row("Rows", f"{info.row_count:,}")
+        meta.add_row("Columns", str(info.column_count))
+        meta.add_row("Size", f"{info.file_size_bytes / 1024:.1f} KB")
+        meta.add_row("Encoding", info.encoding)
+        console.print(Panel(meta, title="[bold]Summary[/bold]", border_style="blue"))
+
+        columns_table = Table(title="Columns")
+        columns_table.add_column("Column", style="cyan")
+        columns_table.add_column("Type", style="yellow")
         for col, dtype in types.items():
-            console.print(f"  {col}: {dtype}")
+            columns_table.add_row(str(col), str(dtype))
+        console.print(columns_table)
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
