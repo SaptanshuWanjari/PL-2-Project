@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 import builtins
 
+import pandas as pd
 from typer.testing import CliRunner
 from rich.text import Text
 
@@ -178,3 +179,57 @@ def test_list_csv_files_ignores_dot_directories(monkeypatch, tmp_path):
 
     assert "data/visible.csv" in files
     assert ".hidden/secret.csv" not in files
+
+
+def test_detect_key_column_prefers_common_id_like_column():
+    """Auto key detection should prefer common id-style columns."""
+    old_df = pd.DataFrame(
+        {
+            "customer_id": [1, 2, 3],
+            "name": ["A", "B", "C"],
+        }
+    )
+    new_df = pd.DataFrame(
+        {
+            "customer_id": [1, 2, 3],
+            "name": ["A", "B", "C"],
+        }
+    )
+
+    assert cli.detect_key_column(old_df, new_df) == "customer_id"
+
+
+def test_detect_key_column_falls_back_to_unique_common_column():
+    """Auto key detection should fallback to a unique common column."""
+    old_df = pd.DataFrame(
+        {
+            "code": ["X1", "X2", "X3"],
+            "city": ["Pune", "Delhi", "Noida"],
+        }
+    )
+    new_df = pd.DataFrame(
+        {
+            "code": ["X1", "X2", "X3"],
+            "city": ["Pune", "Delhi", "Noida"],
+        }
+    )
+
+    assert cli.detect_key_column(old_df, new_df) == "code"
+
+
+def test_detect_key_column_returns_none_when_no_safe_candidate():
+    """Auto key detection should return None when no unique common key exists."""
+    old_df = pd.DataFrame(
+        {
+            "city": ["Pune", "Pune", "Delhi"],
+            "state": ["MH", "MH", "DL"],
+        }
+    )
+    new_df = pd.DataFrame(
+        {
+            "city": ["Pune", "Pune", "Delhi"],
+            "state": ["MH", "MH", "DL"],
+        }
+    )
+
+    assert cli.detect_key_column(old_df, new_df) is None

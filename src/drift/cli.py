@@ -84,6 +84,26 @@ def pick_csv_file(prompt: str) -> Optional[str]:
     return run_fzf(csv_files, prompt)
 
 
+def detect_key_column(old_df, new_df) -> Optional[str]:
+    """Detect a reasonable key column shared by both DataFrames."""
+    common_columns = [col for col in old_df.columns if col in new_df.columns]
+    if not common_columns:
+        return None
+
+    suggested = suggest_key_column(common_columns)
+    if suggested:
+        return suggested
+
+    for col in common_columns:
+        if old_df[col].isna().any() or new_df[col].isna().any():
+            continue
+        if old_df[col].duplicated().any() or new_df[col].duplicated().any():
+            continue
+        return col
+
+    return None
+
+
 def launch_interactive_mode() -> None:
     """Launch interactive command and file picker flow."""
     if not is_fzf_available():
@@ -282,12 +302,9 @@ def analyze(
         key_column = key
 
         if key_column is None:
-            # Try to detect key column
-            suggested_key = suggest_key_column(list(new_df.columns))
-            if suggested_key and suggested_key in old_df.columns:
-                key_column = suggested_key
-                if verbose:
-                    console.print(f"[dim]Auto-detected key column: {key_column}[/dim]")
+            key_column = detect_key_column(old_df, new_df)
+            if key_column and verbose:
+                console.print(f"[dim]Auto-detected key column: {key_column}[/dim]")
 
         if key_column:
             if verbose:
