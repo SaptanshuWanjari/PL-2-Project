@@ -140,11 +140,10 @@ def launch_interactive_mode() -> None:
         new_file = pick_csv_file("New CSV")
         if new_file is None:
             return
-        key = typer.prompt("Key column (optional)", default="").strip() or None
         analyze(
             old_file=Path(old_file),
             new_file=Path(new_file),
-            key=key,
+            key=None,
             format="pretty",
             output=None,
             summary_only=False,
