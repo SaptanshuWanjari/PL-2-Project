@@ -1,0 +1,12 @@
+customer_id,full_name,plan,signup_date,status,region
+1,Alice Johnson,basic,2023-01-10,active,north
+2,Bob Smith,pro,2023-01-14,active,west
+3,Carol Lee,basic,2023-02-01,inactive,east
+4,David Kumar,enterprise,2023-02-11,active,south
+5,Emma Davis,pro,2023-02-20,active,north
+6,Farhan Ali,basic,2023-03-05,active,west
+7,Grace Wong,pro,2023-03-08,inactive,east
+8,Henry Clark,basic,2023-03-22,active,south
+9,Isha Patel,enterprise,2023-04-01,active,north
+10,John Miller,basic,2023-04-09,active,west
+11,Kiran Rao,pro,2023-04-18,active,east

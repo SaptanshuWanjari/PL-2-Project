@@ -158,3 +158,23 @@ def test_list_csv_files_scopes_to_cwd_descendants(monkeypatch, tmp_path):
     assert "nested/child.csv" in files
     assert "../outside.csv" not in files
     assert str(external_csv) not in files
+
+
+def test_list_csv_files_ignores_dot_directories(monkeypatch, tmp_path):
+    """CSV files under dot-prefixed directories should be ignored."""
+    public_dir = tmp_path / "data"
+    public_dir.mkdir()
+    public_csv = public_dir / "visible.csv"
+    public_csv.write_text("id\n1\n", encoding="utf-8")
+
+    hidden_dir = tmp_path / ".hidden"
+    hidden_dir.mkdir()
+    hidden_csv = hidden_dir / "secret.csv"
+    hidden_csv.write_text("id\n2\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+
+    files = cli.list_csv_files()
+
+    assert "data/visible.csv" in files
+    assert ".hidden/secret.csv" not in files

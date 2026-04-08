@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Optional
+import os
 import shutil
 import subprocess
 
@@ -56,13 +57,20 @@ def list_csv_files() -> list[str]:
     cwd = Path.cwd().resolve()
     files: list[str] = []
 
-    for path in cwd.rglob("*.csv"):
-        resolved = path.resolve()
-        if not resolved.is_file():
-            continue
-        if not resolved.is_relative_to(cwd):
-            continue
-        files.append(str(resolved.relative_to(cwd)))
+    for root, dirs, filenames in os.walk(cwd, topdown=True):
+        dirs[:] = [name for name in dirs if not name.startswith(".")]
+
+        root_path = Path(root)
+        for filename in filenames:
+            if not filename.lower().endswith(".csv"):
+                continue
+
+            resolved = (root_path / filename).resolve()
+            if not resolved.is_file():
+                continue
+            if not resolved.is_relative_to(cwd):
+                continue
+            files.append(str(resolved.relative_to(cwd)))
 
     return sorted(files)
 

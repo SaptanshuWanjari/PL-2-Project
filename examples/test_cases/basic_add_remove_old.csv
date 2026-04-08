@@ -1,0 +1,11 @@
+customer_id,name,email,plan,signup_date
+1,Alice Johnson,alice@example.com,basic,2023-01-10
+2,Bob Smith,bob@example.com,pro,2023-01-14
+3,Carol Lee,carol@example.com,basic,2023-02-01
+4,David Kumar,david@example.com,enterprise,2023-02-11
+5,Emma Davis,emma@example.com,pro,2023-02-20
+6,Farhan Ali,farhan@example.com,basic,2023-03-05
+7,Grace Wong,grace@example.com,pro,2023-03-08
+8,Henry Clark,henry@example.com,basic,2023-03-22
+9,Isha Patel,isha@example.com,enterprise,2023-04-01
+10,John Miller,john@example.com,basic,2023-04-09

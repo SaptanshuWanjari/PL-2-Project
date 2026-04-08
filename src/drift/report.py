@@ -66,6 +66,26 @@ class ReportGenerator:
         self.config = config or ReportConfig()
         self.console = Console(no_color=self.config.no_color)
 
+    def _display_path(self, path_value: Any) -> str:
+        """Render file paths relative to current working directory when possible."""
+        if path_value is None:
+            return "unknown"
+
+        path_str = str(path_value)
+        try:
+            path = Path(path_str).expanduser()
+            if not path.is_absolute():
+                return path_str
+
+            resolved = path.resolve()
+            cwd = Path.cwd().resolve()
+            if resolved.is_relative_to(cwd):
+                return str(resolved.relative_to(cwd))
+
+            return str(resolved)
+        except Exception:
+            return path_str
+
     def generate(
         self,
         results: dict[str, Any],
@@ -124,7 +144,9 @@ class ReportGenerator:
                 lines.append(self._format_rows_pretty(results.get("row_diff", {})))
 
             # Explanations
-            lines.append(self._format_explanations_pretty(results.get("explanations", [])))
+            lines.append(
+                self._format_explanations_pretty(results.get("explanations", []))
+            )
 
         # Export info
         if self.config.output_file:
@@ -136,12 +158,15 @@ class ReportGenerator:
         """Format the header section."""
         from rich.text import Text
 
+        old_path = self._display_path(old_info.get("file_path", "unknown"))
+        new_path = self._display_path(new_info.get("file_path", "unknown"))
+
         header = Text()
         header.append("DRIFT ANALYZER", style="bold cyan")
         header.append(" v1.0.0\n")
-        header.append(f"{old_info.get('file_path', 'unknown')}", style="white")
+        header.append(old_path, style="white")
         header.append(" vs ", style="dim")
-        header.append(f"{new_info.get('file_path', 'unknown')}", style="white")
+        header.append(new_path, style="white")
         header.append(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", style="dim")
 
         panel = Panel(header, border_style="cyan", padding=(1, 2))
@@ -182,12 +207,17 @@ class ReportGenerator:
         table.add_row("Severity", f"[{severity_color}]{severity}[/{severity_color}]")
         table.add_row("Rows", f"{old_rows:,} → {new_rows:,} ({row_symbol}{row_diff:,})")
         table.add_row("Columns", f"{old_cols} → {new_cols} ({col_symbol}{col_diff})")
-        table.add_row("Schema changes", str(len(schema.get("removed", [])) + len(schema.get("added", []))))
+        table.add_row(
+            "Schema changes",
+            str(len(schema.get("removed", [])) + len(schema.get("added", []))),
+        )
         table.add_row("Type changes", str(len(type_changes)))
         table.add_row("Row changes", str(len(row_results.get("changed_rows", []))))
 
         with self.console.capture() as capture:
-            self.console.print(Panel(table, title="[bold]Summary[/bold]", border_style="blue"))
+            self.console.print(
+                Panel(table, title="[bold]Summary[/bold]", border_style="blue")
+            )
         return capture.get()
 
     def _format_schema_pretty(self, schema: dict) -> str:
@@ -373,10 +403,12 @@ class ReportGenerator:
         lines = []
 
         # Header
+        old_path = self._display_path(old_info.get("file_path", "unknown"))
+        new_path = self._display_path(new_info.get("file_path", "unknown"))
         lines.append("# Drift Analysis Report\n")
         lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        lines.append(f"**Old file:** `{old_info.get('file_path', 'unknown')}`")
-        lines.append(f"**New file:** `{new_info.get('file_path', 'unknown')}`\n")
+        lines.append(f"**Old file:** `{old_path}`")
+        lines.append(f"**New file:** `{new_path}`\n")
 
         # Summary
         severity = results.get("severity", "Low")
@@ -384,8 +416,12 @@ class ReportGenerator:
         lines.append(f"| Metric | Value |")
         lines.append("|--------|-------|")
         lines.append(f"| **Severity** | {severity} |")
-        lines.append(f"| **Rows** | {old_info.get('row_count', 0):,} → {new_info.get('row_count', 0):,} |")
-        lines.append(f"| **Columns** | {old_info.get('column_count', 0)} → {new_info.get('column_count', 0)} |")
+        lines.append(
+            f"| **Rows** | {old_info.get('row_count', 0):,} → {new_info.get('row_count', 0):,} |"
+        )
+        lines.append(
+            f"| **Columns** | {old_info.get('column_count', 0)} → {new_info.get('column_count', 0)} |"
+        )
 
         # Schema Changes
         schema = results.get("schema", {})
@@ -432,9 +468,13 @@ class ReportGenerator:
             lines.append("|--------|-------|")
             lines.append(f"| Total (old) | {row_diff.get('total_old', 0):,} |")
             lines.append(f"| Total (new) | {row_diff.get('total_new', 0):,} |")
-            lines.append(f"| Missing rows | {len(row_diff.get('missing_rows', [])):,} |")
+            lines.append(
+                f"| Missing rows | {len(row_diff.get('missing_rows', [])):,} |"
+            )
             lines.append(f"| New rows | {len(row_diff.get('new_rows', [])):,} |")
-            lines.append(f"| Changed rows | {len(row_diff.get('changed_rows', [])):,} |")
+            lines.append(
+                f"| Changed rows | {len(row_diff.get('changed_rows', [])):,} |"
+            )
 
         # Explanations
         explanations = results.get("explanations", [])
@@ -455,19 +495,25 @@ class ReportGenerator:
         lines = []
 
         # Header
+        old_path = self._display_path(old_info.get("file_path", "unknown"))
+        new_path = self._display_path(new_info.get("file_path", "unknown"))
         lines.append("=" * 60)
         lines.append("DRIFT ANALYSIS REPORT")
         lines.append("=" * 60)
-        lines.append(f"Old: {old_info.get('file_path', 'unknown')}")
-        lines.append(f"New: {new_info.get('file_path', 'unknown')}")
+        lines.append(f"Old: {old_path}")
+        lines.append(f"New: {new_path}")
         lines.append(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
 
         # Summary
         severity = results.get("severity", "Low")
         lines.append(f"SEVERITY: {severity}")
-        lines.append(f"Rows: {old_info.get('row_count', 0):,} -> {new_info.get('row_count', 0):,}")
-        lines.append(f"Columns: {old_info.get('column_count', 0)} -> {new_info.get('column_count', 0)}")
+        lines.append(
+            f"Rows: {old_info.get('row_count', 0):,} -> {new_info.get('row_count', 0):,}"
+        )
+        lines.append(
+            f"Columns: {old_info.get('column_count', 0)} -> {new_info.get('column_count', 0)}"
+        )
         lines.append("")
 
         # Schema Changes
