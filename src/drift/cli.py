@@ -21,7 +21,7 @@ from drift.utils import suggest_key_column
 app = typer.Typer(
     name="drift",
     help="Explainable Schema Drift Analyzer for CSV Datasets",
-    add_completion=False,
+    add_completion=True,
 )
 
 console = Console()

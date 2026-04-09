@@ -1,0 +1,101 @@
+department_code,record_id,full_name,email_address,age,salary_usd,hire_date,employment_status,location,notes
+HR,1,Aarav Rao,aarav.rao1@example.com,age-23,32925.50,2022-01-01,inactive,south,migrated
+FIN,2,Diya Khan,diya.khan2@example.com,age-24,33851.00,2022-02-02,on_leave,east,migrated
+OPS,3,Ishaan Iyer,ishaan.iyer3@example.com,age-25,"$34,776.50",2022-03-03,active,west,migrated
+MKT,4,Mira Gupta,mira.gupta4@example.com,26 years,35702.00,2022-04-04,inactive,central,migrated
+ENG,5,Rohan Singh,rohan.singh5@example.com,27,36627.50,2022-05-05,on_leave,north,migrated
+HR,6,Anaya Verma,anaya.verma6@example.com,age-28,"$37,553.00",2022-06-06,active,south,migrated
+FIN,7,Kabir Patel,kabir.patel7@example.com,age-29,39678.50,2022-07-07,inactive,east,migrated
+OPS,8,Sara Mehta,sara.mehta8@example.com,30 years,USD 39404.0,2022-08-08,on_leave,west,migrated
+MKT,9,Vihaan Das,vihaan.das9@example.com,age-31,"$40,329.50",2022-09-09,active,central,migrated
+ENG,10,Naina Sharma,naina.sharma10@example.com,32,41255.00,2022-10-10,inactive,north,migrated
+ENG,11,Aarav Rao,aarav.rao11@example.com,age-33,42180.50,2022-11-11,on_leave,south,migrated
+FIN,12,Diya Khan,diya.khan12@example.com,34 years,"$43,106.00",2022-12-12,active,east,migrated
+OPS,13,Ishaan Iyer,ishaan.iyer13@example.com,age-35,44031.50,2022-01-13,inactive,west,migrated
+MKT,14,Mira Gupta,mira.gupta14@example.com,age-36,46157.00,2022-02-14,on_leave,central,migrated
+ENG,15,Rohan Singh,rohan.singh15@example.com,37,"$45,882.50",2022-03-15,active,north,migrated
+HR,16,Anaya Verma,anaya.verma16@example.com,38 years,USD 46808.0,2022-04-16,inactive,south,migrated
+FIN,17,Kabir Patel,kabir.patel17@example.com,age-39,47733.50,2022-05-17,on_leave,east,migrated
+OPS,18,Sara Mehta,sara.mehta18@example.com,age-40,"$48,659.00",2022-06-18,active,west,migrated
+MKT,19,Vihaan Das,vihaan.das19@example.com,age-41,49584.50,2022-07-19,inactive,central,migrated
+ENG,20,Naina Sharma,naina.sharma20@example.com,42 years,50510.00,2022-08-20,on_leave,north,migrated
+HR,21,Aarav Rao,aarav.rao21@example.com,age-43,"$52,635.50",2022-09-21,active,south,migrated
+ENG,22,Diya Khan,diya.khan22@example.com,age-44,52361.00,2022-10-22,inactive,east,migrated
+OPS,23,Ishaan Iyer,ishaan.iyer23@example.com,age-45,53286.50,2022-11-23,on_leave,west,migrated
+MKT,24,Mira Gupta,mira.gupta24@example.com,46 years,"$54,212.00",2022-12-24,active,central,migrated
+ENG,25,Rohan Singh,rohan.singh25@example.com,47,55137.50,2022-01-25,inactive,north,migrated
+HR,26,Anaya Verma,anaya.verma26@example.com,age-48,56063.00,2022-02-26,on_leave,south,migrated
+FIN,27,Kabir Patel,kabir.patel27@example.com,age-49,"$56,988.50",2022-03-27,active,east,migrated
+OPS,28,Sara Mehta,sara.mehta28@example.com,50 years,59114.00,2022-04-28,inactive,west,migrated
+MKT,29,Vihaan Das,vihaan.das29@example.com,age-51,58839.50,2022-05-01,on_leave,central,migrated
+ENG,30,Naina Sharma,naina.sharma30@example.com,52,"$59,765.00",2022-06-02,active,north,migrated
+HR,31,Aarav Rao,aarav.rao31@example.com,age-53,60690.50,2022-07-03,inactive,south,migrated
+FIN,32,Diya Khan,diya.khan32@example.com,54 years,USD 61616.0,2022-08-04,on_leave,east,migrated
+ENG,33,Ishaan Iyer,ishaan.iyer33@example.com,age-22,"$62,541.50",2022-09-05,active,west,migrated
+MKT,34,Mira Gupta,mira.gupta34@example.com,age-23,63467.00,2022-10-06,inactive,central,migrated
+ENG,35,Rohan Singh,rohan.singh35@example.com,24,65592.50,2022-11-07,on_leave,north,migrated
+HR,36,Anaya Verma,anaya.verma36@example.com,25 years,"$65,318.00",2022-12-08,active,south,migrated
+FIN,37,Kabir Patel,kabir.patel37@example.com,age-26,66243.50,2022-01-09,inactive,east,migrated
+OPS,38,Sara Mehta,sara.mehta38@example.com,age-27,67169.00,2022-02-10,on_leave,west,migrated
+MKT,39,Vihaan Das,vihaan.das39@example.com,age-28,"$68,094.50",2022-03-11,active,central,migrated
+ENG,40,Naina Sharma,naina.sharma40@example.com,29 years,USD 69020.0,2022-04-12,inactive,north,migrated
+HR,41,Aarav Rao,aarav.rao41@example.com,age-30,69945.50,2022-05-13,on_leave,south,migrated
+FIN,42,Diya Khan,diya.khan42@example.com,age-31,"$72,071.00",2022-06-14,active,east,migrated
+OPS,43,Ishaan Iyer,ishaan.iyer43@example.com,age-32,71796.50,2022-07-15,inactive,west,migrated
+ENG,44,Mira Gupta,mira.gupta44@example.com,33 years,72722.00,2022-08-16,on_leave,central,migrated
+ENG,45,Rohan Singh,rohan.singh45@example.com,34,"$73,647.50",2022-09-17,active,north,migrated
+HR,46,Anaya Verma,anaya.verma46@example.com,age-35,74573.00,2022-10-18,inactive,south,migrated
+FIN,47,Kabir Patel,kabir.patel47@example.com,age-36,75498.50,2022-11-19,on_leave,east,migrated
+OPS,48,Sara Mehta,sara.mehta48@example.com,37 years,"$76,424.00",2022-12-20,active,west,migrated
+MKT,49,Vihaan Das,vihaan.das49@example.com,age-38,78549.50,2022-01-21,inactive,central,migrated
+ENG,50,Naina Sharma,naina.sharma50@example.com,39,78275.00,2022-02-22,on_leave,north,migrated
+HR,51,Aarav Rao,aarav.rao51@example.com,age-40,"$79,200.50",2022-03-23,active,south,migrated
+FIN,52,Diya Khan,diya.khan52@example.com,41 years,80126.00,2022-04-24,inactive,east,migrated
+OPS,53,Ishaan Iyer,ishaan.iyer53@example.com,age-42,81051.50,2022-05-25,on_leave,west,migrated
+MKT,54,Mira Gupta,mira.gupta54@example.com,age-43,"$81,977.00",2022-06-26,active,central,migrated
+ENG,55,Rohan Singh,rohan.singh55@example.com,44,82902.50,2022-07-27,inactive,north,migrated
+HR,56,Anaya Verma,anaya.verma56@example.com,45 years,USD 85028.0,2022-08-28,on_leave,south,migrated
+FIN,57,Kabir Patel,kabir.patel57@example.com,age-46,"$84,753.50",2022-09-01,active,east,migrated
+OPS,58,Sara Mehta,sara.mehta58@example.com,age-47,85679.00,2022-10-02,inactive,west,migrated
+MKT,59,Vihaan Das,vihaan.das59@example.com,age-48,86604.50,2022-11-03,on_leave,central,migrated
+ENG,60,Naina Sharma,naina.sharma60@example.com,49 years,"$87,530.00",2022-12-04,active,north,migrated
+HR,61,Aarav Rao,aarav.rao61@example.com,age-50,88455.50,2022-01-05,inactive,south,migrated
+FIN,62,Diya Khan,diya.khan62@example.com,age-51,89381.00,2022-02-06,on_leave,east,migrated
+OPS,63,Ishaan Iyer,ishaan.iyer63@example.com,age-52,"$91,506.50",2022-03-07,active,west,migrated
+MKT,64,Mira Gupta,mira.gupta64@example.com,53 years,USD 91232.0,2022-04-08,inactive,central,migrated
+ENG,65,Rohan Singh,rohan.singh65@example.com,54,92157.50,2022-05-09,on_leave,north,migrated
+ENG,66,Anaya Verma,anaya.verma66@example.com,age-22,"$93,083.00",2022-06-10,active,south,migrated
+FIN,67,Kabir Patel,kabir.patel67@example.com,age-23,94008.50,2022-07-11,inactive,east,migrated
+OPS,68,Sara Mehta,sara.mehta68@example.com,24 years,94934.00,2022-08-12,on_leave,west,migrated
+MKT,69,Vihaan Das,vihaan.das69@example.com,age-25,"$95,859.50",2022-09-13,active,central,migrated
+ENG,70,Naina Sharma,naina.sharma70@example.com,26,97985.00,2022-10-14,inactive,north,migrated
+HR,71,Aarav Rao,aarav.rao71@example.com,age-27,97710.50,2022-11-15,on_leave,south,migrated
+FIN,72,Diya Khan,diya.khan72@example.com,28 years,"$98,636.00",2022-12-16,active,east,migrated
+OPS,73,Ishaan Iyer,ishaan.iyer73@example.com,age-29,99561.50,2022-01-17,inactive,west,migrated
+MKT,74,Mira Gupta,mira.gupta74@example.com,age-30,100487.00,2022-02-18,on_leave,central,migrated
+ENG,75,Rohan Singh,rohan.singh75@example.com,31,"$101,412.50",2022-03-19,active,north,migrated
+HR,76,Anaya Verma,anaya.verma76@example.com,32 years,102338.00,2022-04-20,inactive,south,migrated
+ENG,77,Kabir Patel,kabir.patel77@example.com,age-33,104463.50,2022-05-21,on_leave,east,migrated
+OPS,78,Sara Mehta,sara.mehta78@example.com,age-34,"$104,189.00",2022-06-22,active,west,migrated
+MKT,79,Vihaan Das,vihaan.das79@example.com,age-35,105114.50,2022-07-23,inactive,central,migrated
+ENG,80,Naina Sharma,naina.sharma80@example.com,36 years,USD 106040.0,2022-08-24,on_leave,north,migrated
+HR,81,Aarav Rao,aarav.rao81@example.com,age-37,"$106,965.50",2022-09-25,active,south,migrated
+FIN,82,Diya Khan,diya.khan82@example.com,age-38,107891.00,2022-10-26,inactive,east,migrated
+OPS,83,Ishaan Iyer,ishaan.iyer83@example.com,age-39,108816.50,2022-11-27,on_leave,west,migrated
+MKT,84,Mira Gupta,mira.gupta84@example.com,40 years,"$110,942.00",2022-12-28,active,central,migrated
+ENG,85,Rohan Singh,rohan.singh85@example.com,41,110667.50,2022-01-01,inactive,north,migrated
+HR,86,Anaya Verma,anaya.verma86@example.com,age-42,111593.00,2022-02-02,on_leave,south,migrated
+FIN,87,Kabir Patel,kabir.patel87@example.com,age-43,"$112,518.50",2022-03-03,active,east,migrated
+ENG,88,Sara Mehta,sara.mehta88@example.com,44 years,USD 113444.0,2022-04-04,inactive,west,migrated
+MKT,89,Vihaan Das,vihaan.das89@example.com,age-45,114369.50,2022-05-05,on_leave,central,migrated
+ENG,90,Naina Sharma,naina.sharma90@example.com,46,"$115,295.00",2022-06-06,active,north,migrated
+HR,91,Aarav Rao,aarav.rao91@example.com,age-47,117420.50,2022-07-07,inactive,south,migrated
+FIN,92,Diya Khan,diya.khan92@example.com,48 years,117146.00,2022-08-08,on_leave,east,migrated
+OPS,93,Ishaan Iyer,ishaan.iyer93@example.com,age-49,"$118,071.50",2022-09-09,active,west,migrated
+MKT,94,Mira Gupta,mira.gupta94@example.com,age-50,118997.00,2022-10-10,inactive,central,migrated
+ENG,95,Rohan Singh,rohan.singh95@example.com,51,119922.50,2022-11-11,on_leave,north,migrated
+HR,101,NewUser1 Seed,newuser1@example.com,27 years,"$46,500.00",2024-01-15,active,south,new_row
+FIN,102,NewUser2 Seed,newuser2@example.com,28 years,"$48,000.00",2024-02-15,active,east,new_row
+OPS,103,NewUser3 Seed,newuser3@example.com,29 years,"$49,500.00",2024-03-15,active,west,new_row
+MKT,104,NewUser4 Seed,newuser4@example.com,30 years,"$51,000.00",2024-04-15,active,central,new_row
+ENG,105,NewUser5 Seed,newuser5@example.com,31 years,"$52,500.00",2024-05-15,active,north,new_row

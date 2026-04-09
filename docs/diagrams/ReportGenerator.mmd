@@ -1,0 +1,61 @@
+flowchart TD
+    A([Start: ReportGenerator]) --> B[Inputs<br/>results, old_info, new_info, format]
+
+    %% -------- CONFIG --------
+    B --> C[Resolve format<br/>config.format or override]
+
+    C --> D{Format type}
+
+    %% -------- FORMAT SWITCH --------
+    D -->|pretty| E1[Pretty formatter]
+    D -->|json| E2[JSON formatter]
+    D -->|markdown| E3[Markdown formatter]
+    D -->|text| E4[Text formatter]
+    D -->|other| E1
+
+    %% -------- PRETTY PIPELINE --------
+    E1 --> P1[Build Overview Panel<br/>severity, rows, columns, paths]
+
+    P1 --> P2{summary_only?}
+
+    P2 -- No --> P3[Add Drift Details<br/>schema + row tables]
+    P3 --> P4[Add Type Changes Table]
+    P4 --> P5[Add Explanations Panel]
+
+    P2 -- Yes --> P6[Skip detailed sections]
+
+    P5 --> P7
+    P6 --> P7
+
+    P7{output_file set?}
+    P7 -- Yes --> P8[Add export message]
+    P7 -- No --> P9[Skip export note]
+
+    P8 --> P10[Join all sections]
+    P9 --> P10
+
+    %% -------- JSON --------
+    E2 --> J1[Build structured dict<br/>files, severity, schema, types, rows]
+    J1 --> J2[Convert to JSON string]
+
+    %% -------- MARKDOWN --------
+    E3 --> M1[Build markdown report]
+    M1 --> M2[Sections:<br/>summary, schema, types, rows, insights]
+
+    %% -------- TEXT --------
+    E4 --> T1[Build plain text report]
+    T1 --> T2[Sections:<br/>header, schema, types, rows, insights]
+
+    %% -------- OUTPUT --------
+    P10 --> Z
+    J2 --> Z
+    M2 --> Z
+    T2 --> Z
+
+    Z[Final Report String] --> Y{Save report?}
+
+    Y -- Yes --> Y1[Write to file<br/>create dirs if needed]
+    Y -- No --> Y2[Return output only]
+
+    Y1 --> END([End])
+    Y2 --> END

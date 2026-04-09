@@ -1,0 +1,64 @@
+flowchart TD
+    A([Start: SchemaAnalyzer]) --> B[Inputs<br/>old_df, new_df]
+
+    %% -------- EXTRACT COLUMNS --------
+    B --> C[Extract column lists<br/>old_columns, new_columns]
+
+    %% -------- BASIC DIFF --------
+    C --> D[Compare Schemas]
+
+    D --> D1[Find added columns<br/>new - old]
+    D --> D2[Find removed columns<br/>old - new]
+    D --> D3[Find common columns]
+
+    D3 --> D4[Check index changes<br/>detect reordering]
+
+    D4 --> D5[Build SchemaDiff<br/>added, removed, reordered]
+
+    %% -------- RENAME DETECTION --------
+    C --> E[Detect Renames]
+
+    E --> E1[Find unmatched columns<br/>removed + added]
+    E1 --> E2[Compute similarity<br/>SequenceMatcher]
+
+    E2 --> E3{Similarity >= threshold?}
+    E3 -- Yes --> E4[Add candidate pair]
+    E3 -- No --> E5[Discard]
+
+    E4 --> E6[Sort candidates<br/>highest similarity first]
+    E6 --> E7[Greedy match<br/>avoid duplicates]
+
+    E7 --> E8[Build ColumnRename objects]
+
+    %% -------- MERGE RESULTS --------
+    D5 --> F[Attach renames to SchemaDiff]
+    E8 --> F
+
+    F --> G[Convert to dict output]
+
+    %% -------- OPTIONAL PATHS --------
+    G --> H{Use case}
+
+    H -->|analyze| I[Return full diff dict]
+    H -->|summary| J[Return counts + lists]
+    H -->|explain| K[Generate explanations]
+
+    %% -------- EXPLANATIONS --------
+    K --> K1[Explain added columns]
+    K --> K2[Explain removed columns]
+    K --> K3[Explain reordering]
+    K --> K4[Explain renames]
+
+    K1 --> K5
+    K2 --> K5
+    K3 --> K5
+    K4 --> K5
+
+    K5{Any changes?}
+    K5 -- No --> K6[Return: No schema changes]
+    K5 -- Yes --> K7[Return explanations]
+
+    I --> END([End])
+    J --> END
+    K7 --> END
+    K6 --> END

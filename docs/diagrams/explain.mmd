@@ -1,0 +1,58 @@
+flowchart TD
+    A([Start: ExplainabilityEngine]) --> B[Inputs<br/>schema_diff, type_changes, row_diff]
+
+    %% ---------------- SEVERITY ----------------
+    B --> C[Calculate Severity]
+    C --> C1[Compute breakdown scores]
+
+    C1 --> C2[Schema scoring<br/>removed, renamed, reordered]
+    C1 --> C3[Type scoring<br/>int/float → string = high weight]
+    C1 --> C4[Row scoring<br/>changes per 100 rows]
+
+    C2 --> C5
+    C3 --> C5
+    C4 --> C5
+
+    C5[Sum total score] --> C6[Map score to level<br/>Low / Medium / High / Critical]
+
+    %% ---------------- EXPLANATIONS ----------------
+    B --> D[Generate Explanations]
+
+    D --> D1[Explain schema changes<br/>removed, added, renamed, reordered]
+    D --> D2[Explain type changes<br/>risk-based messages]
+    D --> D3[Explain row changes<br/>changed, missing, new rows]
+
+    D1 --> D4
+    D2 --> D4
+    D3 --> D4
+
+    D4{Any explanations?}
+    D4 -- No --> D5[Add default: No significant changes]
+    D4 -- Yes --> D6[Use collected explanations]
+
+    %% ---------------- SUMMARY ----------------
+    B --> E[Generate Change Summary]
+
+    E --> E1[Schema stats<br/>added, removed, reordered, renamed]
+    E --> E2[Type stats<br/>risk distribution]
+    E --> E3[Row stats<br/>counts + percentage]
+
+    %% ---------------- IMPACT ----------------
+    C6 --> F[Explain Impact]
+    E --> F
+
+    F --> F1{Severity level}
+
+    F1 -->|Low| F2[Minor impact<br/>likely safe]
+    F1 -->|Medium| F3[Moderate impact<br/>review needed]
+    F1 -->|High| F4[High impact<br/>risk to pipelines]
+    F1 -->|Critical| F5[Critical impact<br/>immediate action]
+
+    %% ---------------- OUTPUT ----------------
+    C6 --> G
+    D6 --> G
+    D5 --> G
+    E --> G
+    F --> G
+
+    G[Final Output<br/>severity, explanations,<br/>summary, impact] --> H([End])

@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant U as User
+    participant CLI as drift analyze
+    participant L as CSVLoader
+    participant S as SchemaAnalyzer
+    participant T as TypeChecker
+    participant R as RowComparator
+    participant E as ExplainabilityEngine
+    participant G as ReportGenerator
+
+    U->>CLI: run analyze old.csv new.csv [options]
+    CLI->>L: load(old_file)
+    L-->>CLI: old_df, old_info
+    CLI->>L: load(new_file)
+    L-->>CLI: new_df, new_info
+
+    CLI->>S: analyze(old_df, new_df)
+    S-->>CLI: schema_diff
+
+    CLI->>T: compare_types(old_df, new_df, common_columns)
+    T-->>CLI: type_changes
+
+    alt key provided or auto-detected
+        CLI->>R: compare_rows(old_df, new_df, key)
+        R-->>CLI: row_diff
+    else no valid key
+        CLI-->>CLI: row_diff = {}
+    end
+
+    CLI->>E: calculate_severity(schema_diff, type_changes, row_diff)
+    E-->>CLI: severity
+    CLI->>E: generate_explanations(schema_diff, type_changes, row_diff)
+    E-->>CLI: explanations
+    CLI->>E: explain_impact(severity, change_summary)
+    E-->>CLI: impact
+
+    CLI->>G: generate(results, old_info, new_info)
+    G-->>CLI: report_text
+
+    opt --output provided
+        CLI->>G: save_report(report_text, output_file)
+    end
+
+    CLI-->>U: emit_report(report_text, format)
+

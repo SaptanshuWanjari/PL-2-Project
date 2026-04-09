@@ -1,0 +1,53 @@
+flowchart TD
+    A([Start: drift analyze old_file new_file]) --> B[Initialize components<br/>CSVLoader, SchemaAnalyzer, TypeChecker,<br/>RowComparator, ExplainabilityEngine]
+
+    B --> C[Build ReportConfig<br/>format, output, summary_only,<br/>verbose, no_color, strict]
+    C --> D[Create ReportGenerator config]
+
+    D --> E[Load files]
+    E --> E1[Load old file]
+    E1 --> E2[Load new file]
+
+    E2 --> F[Analyze schema differences]
+    F --> G[Find common columns]
+    G --> H[Compare types]
+
+    H --> K[Detect key column]
+    K --> M{Key column exists?}
+
+    M -- No --> N[Set row_diff empty]
+    M -- Yes --> O{Key in both datasets?}
+
+    O -- No --> P[Print key error]
+    P --> X1([Exit 1])
+
+    O -- Yes --> Q[Compare rows]
+    Q --> R[Convert result to dict]
+    N --> S
+    R --> S
+
+    S[Calculate severity]
+    S --> T[Generate explanations]
+    T --> U[Get change summary]
+    U --> V[Explain impact]
+
+    V --> W[Assemble results]
+    W --> Y[Generate report]
+
+    Y --> Z{Output path provided?}
+    Z -- Yes --> Z1[Save report + print path]
+    Z -- No --> AA[Skip save]
+
+    Z1 --> AB[Emit report]
+    AA --> AB
+    AB --> AC([Exit 0])
+
+    E -->|FileNotFoundError| X2[Print error]
+    F -->|ValueError| X3[Print error]
+    G -->|Exception| X4[Unexpected error]
+    H -->|Exception| X4
+    Y -->|Exception| X4
+
+    X2 --> X5([Exit 1])
+    X3 --> X5
+    X4 --> X5
