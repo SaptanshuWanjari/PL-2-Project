@@ -1,5 +1,3 @@
-"""Report generation for drift analysis."""
-
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,9 +14,7 @@ from rich.text import Text
 
 @dataclass
 class ReportConfig:
-    """Configuration for report generation."""
-
-    format: str = "pretty"  # pretty, json, markdown, text
+    format: str = "pretty"
     output_file: Optional[str] = None
     no_color: bool = False
     summary_only: bool = False
@@ -90,11 +86,9 @@ class ReportGenerator:
     ) -> str:
         lines = []
 
-        # Combined header + summary
         lines.append(self._format_overview_pretty(results, old_info, new_info))
 
         if not self.config.summary_only:
-            # Unified drift tables (schema + row-level)
             lines.append(
                 self._format_drift_pretty(
                     results.get("schema", {}),
@@ -102,15 +96,12 @@ class ReportGenerator:
                 )
             )
 
-            # Type Changes
             lines.append(self._format_types_pretty(results.get("type_changes", [])))
 
-            # Explanations
             lines.append(
                 self._format_explanations_pretty(results.get("explanations", []))
             )
 
-        # Export info
         if self.config.output_file:
             lines.append(self._format_export_pretty(self.config.output_file))
 
@@ -172,7 +163,6 @@ class ReportGenerator:
         return capture.get()
 
     def _format_drift_pretty(self, schema: dict, row_diff: dict) -> str:
-        """Render organized drift details using unified schema and row tables."""
         schema_table = self._build_schema_drift_table(schema)
         row_table = self._build_row_drift_table(row_diff) if row_diff else None
 
@@ -202,7 +192,6 @@ class ReportGenerator:
         return capture.get()
 
     def _build_schema_drift_table(self, schema: dict) -> Optional[Table]:
-        """Build one unified schema drift table."""
         added = schema.get("added", [])
         removed = schema.get("removed", [])
         renames = schema.get("renames", [])
@@ -244,7 +233,6 @@ class ReportGenerator:
         return table
 
     def _build_row_drift_table(self, row_diff: dict) -> Optional[Table]:
-        """Build one unified row drift table (summary + samples)."""
         if not row_diff:
             return None
 
@@ -323,7 +311,6 @@ class ReportGenerator:
         severity = results.get("severity", "Low")
         severity_color = self.COLOR_MAP.get(severity, "white")
 
-        # Calculate stats
         old_rows = old_info.get("row_count", 0)
         new_rows = new_info.get("row_count", 0)
         old_cols = old_info.get("column_count", 0)
@@ -457,7 +444,6 @@ class ReportGenerator:
     def _format_rows_pretty(self, row_diff: dict) -> str:
         parts = []
 
-        # Summary stats
         table = Table(title="Row Comparison", show_header=False)
         table.add_column("key", style="dim")
         table.add_column("value")
@@ -473,7 +459,6 @@ class ReportGenerator:
             self.console.print(table)
         parts.append(capture.get())
 
-        # Sample changes
         samples = row_diff.get("samples", [])
         if samples:
             sample_table = Table(title="Sample Changes")
@@ -498,7 +483,6 @@ class ReportGenerator:
         return "\n".join(parts)
 
     def _build_row_tables(self, row_diff: dict) -> list[Table]:
-        """Build row-level tables for unified drift section."""
         tables: list[Table] = []
 
         summary = Table(title="Row Comparison", show_header=False)
@@ -577,7 +561,6 @@ class ReportGenerator:
     ) -> str:
         lines = []
 
-        # Header
         old_path = self._display_path(old_info.get("file_path", "unknown"))
         new_path = self._display_path(new_info.get("file_path", "unknown"))
         lines.append("# Drift Analysis Report\n")
@@ -585,7 +568,6 @@ class ReportGenerator:
         lines.append(f"**Old file:** `{old_path}`")
         lines.append(f"**New file:** `{new_path}`\n")
 
-        # Summary
         severity = results.get("severity", "Low")
         lines.append("## Summary\n")
         lines.append("| Metric | Value |")
@@ -598,7 +580,6 @@ class ReportGenerator:
             f"| **Columns** | {old_info.get('column_count', 0)} → {new_info.get('column_count', 0)} |"
         )
 
-        # Schema Changes
         schema = results.get("schema", {})
         if schema:
             lines.append("\n## Schema Changes\n")
@@ -623,7 +604,6 @@ class ReportGenerator:
                         f"{rename.get('similarity', 0):.0%} |"
                     )
 
-        # Type Changes
         type_changes = results.get("type_changes", [])
         if type_changes:
             lines.append("\n## Type Changes\n")
@@ -635,7 +615,6 @@ class ReportGenerator:
                     f"{change.get('new_type', '')} | {change.get('risk', 'medium')} |"
                 )
 
-        # Row Changes
         row_diff = results.get("row_diff", {})
         if row_diff:
             lines.append("\n## Row Changes\n")
@@ -651,7 +630,6 @@ class ReportGenerator:
                 f"| Changed rows | {len(row_diff.get('changed_rows', [])):,} |"
             )
 
-        # Explanations
         explanations = results.get("explanations", [])
         if explanations:
             lines.append("\n## Insights\n")
@@ -668,7 +646,6 @@ class ReportGenerator:
     ) -> str:
         lines = []
 
-        # Header
         old_path = self._display_path(old_info.get("file_path", "unknown"))
         new_path = self._display_path(new_info.get("file_path", "unknown"))
         lines.append("=" * 60)
@@ -679,7 +656,6 @@ class ReportGenerator:
         lines.append(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
 
-        # Summary
         severity = results.get("severity", "Low")
         lines.append(f"SEVERITY: {severity}")
         lines.append(
@@ -690,7 +666,6 @@ class ReportGenerator:
         )
         lines.append("")
 
-        # Schema Changes
         schema = results.get("schema", {})
         if schema.get("added"):
             lines.append("ADDED COLUMNS:")
@@ -713,7 +688,6 @@ class ReportGenerator:
                 )
             lines.append("")
 
-        # Type Changes
         type_changes = results.get("type_changes", [])
         if type_changes:
             lines.append("TYPE CHANGES:")
@@ -725,7 +699,6 @@ class ReportGenerator:
                 )
             lines.append("")
 
-        # Row Changes
         row_diff = results.get("row_diff", {})
         if row_diff:
             lines.append("ROW CHANGES:")
@@ -734,7 +707,6 @@ class ReportGenerator:
             lines.append(f"  Changed: {len(row_diff.get('changed_rows', []))}")
             lines.append("")
 
-        # Explanations
         explanations = results.get("explanations", [])
         if explanations:
             lines.append("INSIGHTS:")

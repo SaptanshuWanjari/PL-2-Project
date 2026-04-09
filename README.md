@@ -22,7 +22,7 @@ drift
 drift analyze old.csv new.csv
 
 # With key column for row comparison
-drift analyze old.csv new.csv --key id
+drift analyze old.csv new.csv
 
 # Different output formats
 drift analyze old.csv new.csv --format json
@@ -30,9 +30,6 @@ drift analyze old.csv new.csv --format markdown --output report.md
 
 # Summary only
 drift analyze old.csv new.csv --summary-only
-
-# Schema comparison only
-drift schema old.csv new.csv
 
 # Type comparison only
 drift types old.csv new.csv

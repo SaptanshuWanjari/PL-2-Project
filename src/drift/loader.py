@@ -1,5 +1,3 @@
-"""CSV file loader and validator."""
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -28,8 +26,6 @@ class CSVInfo:
 
 
 class CSVLoader:
-    SUPPORTED_ENCODINGS = ["utf-8", "utf-8-sig", "latin-1", "iso-8859-1", "cp1252"]
-
     def __init__(self, delimiter: str = ",", strict: bool = False):
         self.delimiter = delimiter
         self.strict = strict
@@ -62,39 +58,16 @@ class CSVLoader:
         return df, info
 
     def _read_with_encoding(self, path: Path) -> tuple[pd.DataFrame, str]:
-        errors = []
-
-        for encoding in self.SUPPORTED_ENCODINGS:
-            try:
-                df = pd.read_csv(
-                    path,
-                    delimiter=self.delimiter,
-                    encoding=encoding,
-                    on_bad_lines="error" if self.strict else "skip",
-                )
-                return df, encoding
-            except UnicodeDecodeError:
-                errors.append(f"{encoding}: encoding error")
-            except pd.errors.ParserError as e:
-                if self.strict:
-                    errors.append(f"{encoding}: parse error - {e}")
-                else:
-                    try:
-                        df = pd.read_csv(
-                            path,
-                            delimiter=self.delimiter,
-                            encoding=encoding,
-                            on_bad_lines="skip",
-                        )
-                        return df, encoding
-                    except Exception as e2:
-                        errors.append(f"{encoding}: {e2}")
-            except Exception as e:
-                errors.append(f"{encoding}: {e}")
-
-        error_msg = f"Could not read CSV file '{path}'. Tried encodings:\n"
-        error_msg += "\n".join(errors)
-        raise ValueError(error_msg)
+        try:
+            df = pd.read_csv(
+                path,
+                delimiter=self.delimiter,
+                encoding="utf-8",
+                on_bad_lines="error" if self.strict else "skip",
+            )
+            return df, "utf-8"
+        except UnicodeDecodeError as e:
+            raise ValueError(f"File is not UTF-8 encoded: {path}") from e
 
     def _validate(self, df: pd.DataFrame, path: Path) -> None:
         if df.empty:
@@ -107,18 +80,13 @@ class CSVLoader:
         duplicates = df.columns[df.columns.duplicated()].tolist()
         if duplicates:
             if self.strict:
-                raise ValueError(
-                    f"CSV has duplicate column names: {duplicates}. "
-                    "Use --no-strict to allow this."
-                )
+                raise ValueError(f"CSV has duplicate column names: {duplicates}")
 
         # Check for empty column names
         empty_cols = [col for col in df.columns if str(col).strip() == ""]
         if empty_cols:
             if self.strict:
-                raise ValueError(
-                    "CSV has empty column names. Use --no-strict to allow this."
-                )
+                raise ValueError("CSV has empty column names.")
 
     def get_column_types(self, df: pd.DataFrame) -> dict[str, str]:
         types = {}
